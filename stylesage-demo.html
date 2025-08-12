@@ -1,0 +1,175 @@
+<!-- Save as stylesage-demo.html and open in browser -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>StyleSage Demo — HTML/CSS AI (toy prototype)</title>
+<style>
+  :root{--bg:#f6f8fb;--card:#fff;--accent:#1e88e5;--muted:#6b7280;}
+  body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:#0b1220}
+  .wrap{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:18px;height:100vh;box-sizing:border-box}
+  .panel{background:#fff;border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(11,18,32,0.06);display:flex;flex-direction:column;overflow:hidden}
+  .panel h3{margin:0 0 8px 0;font-size:14px}
+  textarea{flex:1;width:100%;min-height:200px;border:1px solid #e6e9ef;padding:8px;border-radius:6px;font-family:monospace}
+  .controls{display:flex;gap:8px;margin-top:8px;align-items:center}
+  select,button{padding:8px 10px;border-radius:8px;border:1px solid #dfe6f0;background:white}
+  .preview{flex:1;overflow:auto;padding:12px;background:linear-gradient(180deg,#fbfdff, #f3f6fb)}
+  .preview iframe{width:100%;height:100%;border:0;background:transparent}
+  .meta{font-size:12px;color:var(--muted);margin-top:6px}
+  .injected-styles{white-space:pre-wrap;font-family:monospace;background:#0b1220;color:#e6f0ff;padding:8px;border-radius:6px;overflow:auto;max-height:120px}
+  @media (max-width: 800px) {
+    .wrap {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <h3>Input HTML</h3>
+    <textarea id="htmlInput"><header class="site-header">
+  <h1>Anna University Labs</h1>
+  <nav><a href="#">Home</a> · <a href="#">Departments</a> · <a href="#">Contact</a></nav>
+</header>
+
+<main>
+  <section class="hero">
+    <h2>Welcome to the Innovation Block</h2>
+    <p>Explore labs, events, and research groups.</p>
+    <button class="cta">Explore</button>
+  </section>
+
+  <section class="cards">
+    <article class="card"><h3>Robotics Lab</h3><p>Open 9am–5pm</p></article>
+    <article class="card"><h3>AI Research</h3><p>Seminar at 4pm</p></article>
+  </section>
+</main></textarea>
+
+    <div class="controls">
+      <label for="preset">Style preset</label>
+      <select id="preset">
+        <option value="modern">Modern Clean</option>
+        <option value="glass">Glassmorphism</option>
+        <option value="dark">Dark Academic</option>
+        <option value="access">Accessible High-Contrast</option>
+      </select>
+      <button id="apply">Apply style (AI)</button>
+      <button id="explain">Explain sample rule</button>
+    </div>
+
+    <div class="meta">This demo injects prewritten CSS per preset to simulate AI output.</div>
+    <div style="height:12px"></div>
+    <div>
+      <h3>Generated CSS</h3>
+      <div id="generated" class="injected-styles">// CSS will appear here</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Live Preview</h3>
+    <div class="preview">
+      <iframe id="previewFrame" sandbox="allow-scripts"></iframe>
+    </div>
+    <div style="height:10px"></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="export">Export CSS</button>
+      <div class="meta" id="status">Status: idle</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const presets = {
+  modern: `:root{--bg:#f6f8fb;--card:#fff;--accent:#1e88e5;--muted:#6b7280}
+body{background:var(--bg);font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;color:#0b1220;margin:0}
+.site-header{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:transparent}
+.site-header h1{font-size:20px;margin:0}
+.hero{background:linear-gradient(180deg,#fff, #f2f6fb);padding:28px;border-radius:12px;margin:18px 0;box-shadow:0 6px 12px rgba(16,24,40,0.04)}
+.cta{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:8px;cursor:pointer}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(11,18,32,0.05)}`,
+  glass: `:root{--glass: rgba(255,255,255,0.85);--accent:#6b21a8}
+body{background:linear-gradient(180deg,#eef2ff,#f7f0ff);font-family:'Poppins',system-ui;margin:0;color:#1a1632}
+.site-header{padding:18px 24px;backdrop-filter:blur(8px);background:rgba(255,255,255,0.6);border-bottom:1px solid rgba(255,255,255,0.4);display:flex;justify-content:space-between;align-items:center}
+.site-header h1{font-size:20px;margin:0}
+.hero{backdrop-filter: blur(8px);background:var(--glass);border-radius:14px;padding:26px;border:1px solid rgba(255,255,255,0.6);margin:18px 0}
+.cta{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:8px;cursor:pointer}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.card{background:linear-gradient(135deg, rgba(255,255,255,0.55), rgba(255,255,255,0.4));padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.3)}`,
+  dark: `:root{--bg:#0b1220;--card:#0f1724;--accent:#f59e0b;--muted:#94a3b8}
+body{background:var(--bg);color:#e6edf3;font-family:system-ui;margin:0}
+.site-header{padding:18px 24px;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center}
+.site-header h1{font-size:20px;margin:0}
+.hero{background:#0f172a;padding:28px;border-radius:12px;margin:18px 0;border:1px solid #1e293b}
+.cta{background:var(--accent);color:#0b1220;border:0;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:bold}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.card{background:var(--card);padding:14px;border-radius:10px;border:1px solid #1e293b}`,
+  access: `:root{--bg:#ffffff;--card:#ffffff;--accent:#003865;--muted:#444}
+body{background:var(--bg);color:#000000;font-family:Arial,Helvetica,sans-serif;line-height:1.4;margin:0}
+a,button{color:var(--accent);outline:2px solid transparent} a:focus,button:focus{outline-color:var(--accent)}
+.site-header{padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #000}
+.site-header h1{font-size:20px;margin:0}
+.hero{background:#f0f0f0;padding:28px;border-radius:0;margin:18px 0;border:2px solid #000}
+.cta{border:3px solid var(--accent);background:transparent;color:var(--accent);padding:10px 14px;border-radius:8px;font-weight:bold;cursor:pointer}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.card{background:var(--card);padding:14px;border-radius:0;border:2px solid #000}`
+};
+
+const explanations = {
+  modern: "A clean, spacious layout using a system font stack. It features soft shadows and a gentle gradient in the hero section for a subtle, professional look. The responsive card grid adapts to various screen sizes.",
+  glass: "This style uses a semi-transparent, blurred background effect known as glassmorphism. It creates a sense of depth and layers. The purple accent color adds a vibrant touch.",
+  dark: "A dark theme that's easy on the eyes in low-light environments. It uses an off-black background and a high-contrast amber accent color for readability. Borders help define UI elements.",
+  access: "A high-contrast theme designed for maximum accessibility. It uses pure black and white, a highly readable font (Arial), and thick borders to clearly delineate sections. Focus indicators are prominent."
+};
+
+const htmlInput = document.getElementById('htmlInput');
+const presetSelect = document.getElementById('preset');
+const applyBtn = document.getElementById('apply');
+const previewFrame = document.getElementById('previewFrame');
+const generated = document.getElementById('generated');
+const status = document.getElementById('status');
+const explainBtn = document.getElementById('explain');
+const exportBtn = document.getElementById('export');
+
+function renderPreview(html, css){
+  const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+  doc.open();
+  doc.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body>${html}</body></html>`);
+  doc.close();
+}
+
+applyBtn.addEventListener('click', ()=>{
+  status.textContent = 'Status: generating…';
+  // simulate AI latency
+  setTimeout(()=>{
+    const css = presets[presetSelect.value] || presets.modern;
+    generated.textContent = css;
+    renderPreview(htmlInput.value, css);
+    status.textContent = 'Status: applied preset "'+presetSelect.value+'"';
+  }, 500);
+});
+
+explainBtn.addEventListener('click', ()=>{
+  const selectedPreset = presetSelect.value;
+  const explanation = explanations[selectedPreset] || "No explanation available for this preset.";
+  alert(explanation);
+});
+
+exportBtn.addEventListener('click', ()=>{
+  const css = generated.textContent || '';
+  const blob = new Blob([css], {type:'text/css'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'stylesage-styles.css'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+// initial render
+renderPreview(htmlInput.value, presets.modern);
+generated.textContent = presets.modern;
+</script>
+</body>
+</html>
